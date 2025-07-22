@@ -1,6 +1,7 @@
 from openai import OpenAI
 import streamlit as st
 import base64
+from datetime import datetime
 
 st.set_page_config(layout = "wide")
 
@@ -69,19 +70,41 @@ if api_key:
             with st.chat_message("user"):
                 st.markdown(display_content, unsafe_allow_html = True)
 
-            # display the assistant content
-            with st.chat_message("assistant"):
-                stream = client.chat.completions.create(
-                    model = model_name,
-                    messages = [
+            # #display the assistant content
+            # with st.chat_message("assistant"):
+            #     stream = client.chat.completions.create(
+            #         model = model_name,
+            #         messages = [
+            #             {"role": n["role"], "content": n["content"]}
+            #             for n in st.session_state.messages
+            #         ],
+
+            #         stream = True,
+            #     )
+
+            #     response = st.write_stream(stream)
+
+            today = datetime.now().strftime("%A, %B %d, %Y")
+
+            stream = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    # New system instruction with current date
+                    {
+                        "role": "system",
+                        "content": f"Current date is {today}. Find the day, and month. Please use this when answering."
+                    },
+                    # Then the full chat history as before
+                    *[
                         {"role": n["role"], "content": n["content"]}
                         for n in st.session_state.messages
-                    ],
+                    ]
+                ],
+                stream=True,
+            )
 
-                    stream = True,
-                )
+            response = st.write_stream(stream)
 
-                response = st.write_stream(stream)
 
             # store all history assistant content in session state
             st.session_state.messages.append({"role": "assistant", "content": response})
